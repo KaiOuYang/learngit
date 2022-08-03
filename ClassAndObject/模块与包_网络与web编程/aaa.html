@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <!--引入elementui vue.js-->
+</head>
+<body>
+
+    <el-select v-model="val" placeholder="请选择分类">
+    <el-option
+      v-for="item in authorArr"
+      :key="item.value"
+      :label="item.label"
+      :value="item.value">
+    </el-option>
+    </el-select>
+    <el-button type="primary" @click="save">保存</el-button>
+
+    <script>
+        export default {
+          data() {
+            return {
+              authorArr: [],
+              val: ""
+            };
+          },
+          methods: {
+            //查询hotL1数据
+            getHotL1List() {
+              this.$api.operation
+                .getAuthorList({
+                  status: this.listQuery.authorStatus
+                })//这是接口
+                .then(res => {
+                  if (res.code == 200) {
+                    this.authorArr = res.data
+                  }
+                });
+            },
+            save(){
+                console.log(this.authorArr)
+                // 表格信息通过接口发送给后端
+                this.$api.save({
+                   value: this.val
+                })//这是接口
+                .then(res => {
+                  if (res.data.code == 200) {
+                    this.authorArr = res.optionArr
+                  }
+                });
+          }
+          },
+
+
+
+
+          created() {
+            this.getAuthorList();
+          }
+        };
+    </script>
+</body>
+</html>
