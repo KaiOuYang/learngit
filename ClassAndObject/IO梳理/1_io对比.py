@@ -112,7 +112,7 @@ def nbio_test():
             del_list.clear()
 
 
-def mio_test():#IO复用指的是s端的监控线程是被复用的
+def mio_test():#IO复用指的是s端的监控线程是被复用的,多路复用使用的可以是非阻塞型(常用)也可以阻塞型，表明多路复用只是一种监控机制
     import select
     server = socket.socket()
     addr = ('127.0.0.1', 8082)
