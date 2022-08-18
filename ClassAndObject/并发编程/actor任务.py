@@ -3,6 +3,10 @@
 from queue import Queue
 from threading import Thread,Event
 
+# 一个actor就是一个并发执行的任务，只是简单的执行发送给它的消息任务。
+#响应这些消息时，它可能还会给其他actor 发送更进一步的消息。actor 之间的通信是单向和异步的。因此，消息发送者不知
+#道消息是什么时候被发送，也不会接收到一个消息已被处理的回应或通知。
+
 #actor模式的魅力在于简单性，其实只有一个核心操作 send()。而在actor系统中的"消息"的泛化概念可用多种方式扩展
 #比如以元组形式传递标签消息，让actor执行不同的操作(TaggedActor类)
 #比如actor允许在一个工作者中运行任意的函数，并且通过一个特殊的Result对象返回结果
@@ -57,11 +61,25 @@ class Actor:
 
 
 class PrintActor(Actor):
+    '''
+    使用actor实例（使用前实例要先start以启动后台线程）的send方法发送消息给它们。其机制是，这个方法会将消息放入一个队列_mailbox中，让后将其转交给
+    处理被接受消息的一个内部线程(是经由start启动的将_bootstrap函数作为任务的后台线程,_bootstrap中将调用run函数后无限轮询recv，
+    从队列_mailbox中取消息)
+    '''
 
-    def run(self):
+    def run(self):#run函数能被用户自定义其道理在于 用户可自定义接收的数据形式，并依据数据形式做自定义的业务内容
         while True:
             msg = self.recv()
             print('Got:',msg)
+
+
+def test_PrintActor():
+    p = PrintActor()
+    p.start()
+    p.send('HELL')
+    p.send('work')
+    p.close()
+    p.join()
 
 #以元组形式传递标签消息
 class TaggedActor(Actor):
@@ -121,9 +139,4 @@ def test_Worker():
     print(r.result())
 
 if __name__ == '__main__':
-    p = PrintActor()
-    p.start()
-    p.send('HELL')
-    p.send('work')
-    p.close()
-    p.join()
+    test_PrintActor()

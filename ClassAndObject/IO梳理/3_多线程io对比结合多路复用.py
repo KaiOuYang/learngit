@@ -10,7 +10,7 @@ https://www.cnblogs.com/tiancai/p/15983644.html
 https://zhuanlan.zhihu.com/p/406293032
 '''
 
-def multiTask(conn,addr):
+def multiTask(conn,addr):#需要处理连接而不是单单请求
     print('Got connection from', addr)
     print('current thread is ',threading.current_thread().name)
     while True:#每个连接都是视为长连接故死循环等待数据到来，只是当缓冲区的数据都提取完成后再被阻塞后切回主线程
@@ -51,8 +51,8 @@ def multiRepeatBio():
                 clientSocket,addr = server.accept()
                 sList.append(clientSocket)
             else:
-                result = pool.submit(multiTask,rObject,addr)#会导致同一个连接每次发来数据就占用一个线程，即多个线程对应同一个连接，资源浪费
-                sList.remove(rObject)#所以需要从sList中删除掉，交给线程池后就不用管该连接了
+                result = pool.submit(multiTask,rObject,addr)#异步过程。会导致同一个连接每次发来数据就占用一个线程，即多个线程对应同一个连接，资源浪费故
+                sList.remove(rObject)#需要从sList中删除掉，交给线程池后就不用管该连接了，即一连接对应一线程，而Handler则是一请求对应一线程，会将线程资源用尽，因一个连接会有很多个请求
 
 
 
