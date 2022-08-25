@@ -1,8 +1,24 @@
 
 
-import socket,select,threading
+import socket,select,threading,time
 from threading import Thread
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor,as_completed
+
+results = []#列表的append与remove都是线程安全的
+
+def superviseResult():#用于监控work结果是否到来
+    print("superviseResult执行...")
+    while True:#必然会占用分配给该线程的时间片走完，可否若都是阻塞则直接切换cpu呢
+        time.sleep(2)
+        print('results的元素个数为: ', len(results))
+        #先将results中的元组拆出来
+        futureResult = [itemFuture for itemFuture,rsend in results]
+        for future in as_completed(futureResult):#若期物们都未完成，则会阻塞(是否会导致直接切换线程？)
+            print('处理后results的元素个数为: ', len(futureResult))
+            print("future结果为:")
+            print(future.result())
+            futureResult.remove(future)
+
 
 
 class Worker():
@@ -13,6 +29,7 @@ class Worker():
     def work(self,data):
         print("current Thread is ",threading.current_thread().name)
         print("work()已接收到数据")
+        return "success work!"
 
 
 class Handler():
@@ -31,7 +48,8 @@ class Handler():
         if len(data) == 0:
             self.sList.remove(self.rObject)
             return
-        result = self.pool.submit(Worker.work,data)#异步过程
+        resultFuture = self.pool.submit(Worker.work,data)#异步过程
+        results.append((resultFuture,self.rObject))
         self.rObject.send(b'already submit to Worker')#此时拿不到result，所以需要另外处理
 
 
@@ -68,7 +86,7 @@ class Dispatch():
             else:#sub使用时的dispatch逻辑
                 try:
                     handler = Handler(rItem,self.sList,self.pool)
-                    handler.handle()
+                    handler.handle()#若在此处理resultFuture则必然会堵塞该SubReactor线程则后续的请求都会卡住，或专门拿一个线程出来监控等待结果返回?
                 except ConnectionResetError as e:
                     self.sList.remove(rItem)
                     continue
@@ -85,6 +103,9 @@ class MainReactor():
 
         sList = []
         sList.append(server)
+        resultSupervisor = Thread(target=superviseResult)
+        resultSupervisor.daemon = True
+        resultSupervisor.start()
         while True:#只管建立连接，建完连接后立马交给sub
             rList,wList,eList = select.select(sList,[],[])
             dispatchor = Dispatch(sList,rList,server=server)

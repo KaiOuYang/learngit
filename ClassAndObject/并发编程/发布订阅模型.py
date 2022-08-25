@@ -14,7 +14,7 @@ from contextlib import contextmanager
 class Exchange:
 
     def __init__(self):
-        self._subscribers = set()
+        self._subscribers = set()#围绕一个集合，做增删改查
 
     def attach(self,task):
         self._subscribers.add(task)
